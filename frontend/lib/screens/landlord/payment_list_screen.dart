@@ -24,7 +24,10 @@ class _LandlordPaymentScreenState extends State<LandlordPaymentScreen> {
     try {
       _properties = await ApiService.getList('/properties');
       _stats = await ApiService.get('/dashboard/landlord');
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load payments'), backgroundColor: Colors.red));
+    }
     if (mounted) setState(() => _loading = false);
   }
 

@@ -18,7 +18,10 @@ class _InviteScreenState extends State<InviteScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    try { _invitations = await ApiService.getList('/invitations'); } catch (_) {}
+    try { _invitations = await ApiService.getList('/invitations'); } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load invitations'), backgroundColor: Colors.red));
+    }
     if (mounted) setState(() => _loading = false);
   }
 

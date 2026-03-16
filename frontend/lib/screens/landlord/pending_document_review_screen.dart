@@ -27,7 +27,10 @@ class _PendingDocumentReviewScreenState extends State<PendingDocumentReviewScree
         final docs = await ApiService.getList('/documents/lease/${l['id']}');
         for (var d in docs) { _allDocs.add({...d as Map<String, dynamic>, 'leaseTenantName': l['tenantName'], 'leaseUnitName': l['unitName']}); }
       }
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load pending documents'), backgroundColor: Colors.red));
+    }
     if (mounted) setState(() => _loading = false);
   }
 

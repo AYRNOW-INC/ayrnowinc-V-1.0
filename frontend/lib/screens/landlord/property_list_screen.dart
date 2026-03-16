@@ -35,7 +35,10 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
     setState(() => _loading = true);
     try {
       _properties = await ApiService.getList('/properties');
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load properties'), backgroundColor: Colors.red));
+    }
     if (mounted) setState(() => _loading = false);
   }
 

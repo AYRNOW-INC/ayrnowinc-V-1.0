@@ -23,7 +23,10 @@ class _LeaseListScreenState extends State<LeaseListScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    try { _leases = await ApiService.getList('/leases/landlord'); } catch (_) {}
+    try { _leases = await ApiService.getList('/leases/landlord'); } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load leases'), backgroundColor: Colors.red));
+    }
     if (mounted) setState(() => _loading = false);
   }
 

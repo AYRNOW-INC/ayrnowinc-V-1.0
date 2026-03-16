@@ -19,7 +19,10 @@ class _TenantPaymentScreenState extends State<TenantPaymentScreen> {
   void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
-    try { _payments = await ApiService.getList('/payments/tenant'); } catch (_) {}
+    try { _payments = await ApiService.getList('/payments/tenant'); } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load payments'), backgroundColor: Colors.red));
+    }
     if (mounted) setState(() => _loading = false);
   }
 

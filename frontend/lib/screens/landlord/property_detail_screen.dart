@@ -37,8 +37,12 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> with Single
     try {
       final p = await ApiService.get('/properties/${widget.propertyId}');
       if (mounted) setState(() { _property = p; _loading = false; });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load property details'), backgroundColor: Colors.red));
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -583,8 +587,12 @@ class _LeaseSettingsScreenState extends State<_LeaseSettingsScreen> {
     try {
       final s = await ApiService.get('/properties/${widget.propertyId}/lease-settings');
       if (mounted) setState(() { _settings = s; _loading = false; _populateFields(s); });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load lease settings'), backgroundColor: Colors.red));
+        setState(() => _loading = false);
+      }
     }
   }
 

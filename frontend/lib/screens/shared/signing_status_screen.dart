@@ -19,7 +19,10 @@ class _SigningStatusScreenState extends State<SigningStatusScreen> {
   void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
-    try { _lease = await ApiService.get('/leases/${widget.leaseId}'); } catch (_) {}
+    try { _lease = await ApiService.get('/leases/${widget.leaseId}'); } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load signing status'), backgroundColor: Colors.red));
+    }
     if (mounted) setState(() => _loading = false);
   }
 

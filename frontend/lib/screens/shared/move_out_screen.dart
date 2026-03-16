@@ -22,7 +22,10 @@ class _MoveOutScreenState extends State<MoveOutScreen> {
     try {
       _requests = await ApiService.getList(
         widget.isLandlord ? '/move-out/landlord' : '/move-out/tenant');
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load move-out requests'), backgroundColor: Colors.red));
+    }
     if (mounted) setState(() => _loading = false);
   }
 

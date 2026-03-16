@@ -18,7 +18,10 @@ class _DocumentScreenState extends State<DocumentScreen> {
   void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
-    try { _documents = await ApiService.getList('/documents/tenant'); } catch (_) {}
+    try { _documents = await ApiService.getList('/documents/tenant'); } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load documents'), backgroundColor: Colors.red));
+    }
     if (mounted) setState(() => _loading = false);
   }
 

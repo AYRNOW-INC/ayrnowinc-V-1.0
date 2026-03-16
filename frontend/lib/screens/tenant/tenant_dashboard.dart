@@ -24,7 +24,10 @@ class _TenantDashboardState extends State<TenantDashboard> {
   void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
-    try { _stats = await ApiService.get('/dashboard/tenant'); } catch (_) {}
+    try { _stats = await ApiService.get('/dashboard/tenant'); } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load dashboard'), backgroundColor: Colors.red));
+    }
     if (mounted) setState(() => _loading = false);
   }
 

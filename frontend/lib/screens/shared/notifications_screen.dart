@@ -17,7 +17,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
-    try { _notifications = await ApiService.getList('/notifications'); } catch (_) {}
+    try { _notifications = await ApiService.getList('/notifications'); } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load notifications'), backgroundColor: Colors.red));
+    }
     if (mounted) setState(() => _loading = false);
   }
 
