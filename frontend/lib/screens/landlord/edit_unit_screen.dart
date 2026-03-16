@@ -62,7 +62,16 @@ class _EditUnitScreenState extends State<EditUnitScreen> {
         'unitType': _type,
         'floor': _floorC.text.trim(),
         'monthlyRent': double.tryParse(_rentC.text),
+        'securityDeposit': double.tryParse(_depositC.text),
         'description': _notesC.text.trim(),
+        'readyForLeasing': _readyForLeasing,
+        'utilities': {
+          'electricity': _electricity,
+          'water': _water,
+          'internet': _internet,
+          'trash': _trash,
+          'gas': _gas,
+        },
       };
       if (_isEdit) {
         await ApiService.put('/properties/${widget.propertyId}/units/${widget.unit!['id']}', body: body);

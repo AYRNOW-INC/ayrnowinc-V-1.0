@@ -197,6 +197,9 @@ class _MoveOutFormState extends State<_MoveOutForm> {
         'leaseId': _leaseId,
         'requestedDate': '${_date!.year}-${_date!.month.toString().padLeft(2, '0')}-${_date!.day.toString().padLeft(2, '0')}',
         'reason': [if (_reasonTag != null) _reasonTag!, _reasonC.text].join(' - '),
+        'forwardingAddress': _addressC.text.trim(),
+        'forwardingCity': _cityC.text.trim(),
+        'forwardingZip': _zipC.text.trim(),
       });
       widget.onSubmitted();
       if (mounted) Navigator.pop(context);

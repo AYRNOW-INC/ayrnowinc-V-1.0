@@ -179,6 +179,7 @@ class _InviteTenantScreenState extends State<_InviteTenantScreen> {
   final _emailC = TextEditingController();
   List<dynamic> _properties = [];
   int? _unitId;
+  DateTime? _startDate;
   String _tone = 'Professional';
   bool _sending = false;
   bool _sent = false;
@@ -209,6 +210,9 @@ class _InviteTenantScreenState extends State<_InviteTenantScreen> {
       _result = await ApiService.post('/invitations', body: {
         'unitSpaceId': _unitId,
         'tenantEmail': _emailC.text.trim(),
+        'tenantName': _nameC.text.trim(),
+        'tone': _tone,
+        if (_startDate != null) 'proposedStartDate': _startDate!.toIso8601String(),
       });
       widget.onSent();
       if (mounted) setState(() => _sent = true);
@@ -257,7 +261,7 @@ class _InviteTenantScreenState extends State<_InviteTenantScreen> {
               final picked = await showDatePicker(context: context,
                 initialDate: DateTime.now().add(const Duration(days: 30)),
                 firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
-              if (picked != null) setState(() {});
+              if (picked != null) setState(() => _startDate = picked);
             },
             child: Container(
               padding: const EdgeInsets.all(14),

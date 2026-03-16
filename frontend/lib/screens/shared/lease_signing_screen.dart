@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:signature/signature.dart';
 import '../../services/api_service.dart';
@@ -30,9 +31,18 @@ class _LeaseSigningScreenState extends State<LeaseSigningScreen> {
 
   Future<void> _sign() async {
     if (!_canSign) return;
+    final signatureBytes = await _sigC.toPngBytes();
+    if (signatureBytes == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please draw your signature first')));
+      return;
+    }
     setState(() => _signing = true);
     try {
-      await ApiService.post('/leases/${widget.lease['id']}/sign');
+      await ApiService.post('/leases/${widget.lease['id']}/sign', body: {
+        'signature': base64Encode(signatureBytes),
+        'signedAt': DateTime.now().toIso8601String(),
+      });
       widget.onSigned();
       if (mounted) {
         Navigator.pushReplacement(context, MaterialPageRoute(
