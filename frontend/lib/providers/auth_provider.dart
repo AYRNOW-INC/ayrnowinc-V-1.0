@@ -25,6 +25,7 @@ class AuthProvider extends ChangeNotifier {
         _isLoggedIn = true;
       }
     } catch (_) {
+      await ApiService.clearTokens();
       _isLoggedIn = false;
       _user = null;
     }

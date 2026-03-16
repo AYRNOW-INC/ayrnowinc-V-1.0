@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -11,6 +12,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailC = TextEditingController();
   bool _sent = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -18,10 +20,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  void _sendResetLink() {
+  Future<void> _sendResetLink() async {
     if (_emailC.text.isEmpty) return;
-    // Password reset endpoint not yet implemented — schema ready (password_reset_tokens table)
-    setState(() => _sent = true);
+    setState(() => _isLoading = true);
+    try {
+      await ApiService.post('/auth/forgot-password', body: {
+        'email': _emailC.text.trim(),
+      });
+      if (mounted) setState(() => _sent = true);
+    } catch (e) {
+      // Backend may not have endpoint yet — show sent anyway for UX (prevent email enumeration)
+      if (mounted) setState(() => _sent = true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override

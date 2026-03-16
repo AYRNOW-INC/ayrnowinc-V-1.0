@@ -313,9 +313,11 @@ class _InviteAcceptScreenState extends State<InviteAcceptScreen> {
           // Accept & Continue
           ElevatedButton(
             onPressed: _hasLength && _hasUpper && _hasNumber && _matches ? () {
-              // Navigate to register with invite code and pre-filled email
               Navigator.pushReplacement(context, MaterialPageRoute(
-                builder: (_) => const RegisterScreen()));
+                builder: (_) => RegisterScreen(
+                  inviteCode: widget.inviteCode,
+                  prefilledEmail: _invite?['tenantEmail'] as String?,
+                )));
             } : null,
             style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 56),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),

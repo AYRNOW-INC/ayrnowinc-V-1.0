@@ -30,19 +30,38 @@ class ApiService {
     };
   }
 
+  /// Attempt to refresh expired access token using stored refresh token.
+  static Future<bool> _refreshToken() async {
+    final refreshToken = await _storage.read(key: 'refreshToken');
+    if (refreshToken == null) return false;
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshToken}),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        await saveTokens(data['accessToken'], data['refreshToken']);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   static Future<Map<String, dynamic>> get(String path) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(),
-    );
+    var response = await http.get(Uri.parse('$baseUrl$path'), headers: await _headers());
+    if (response.statusCode == 401 && await _refreshToken()) {
+      response = await http.get(Uri.parse('$baseUrl$path'), headers: await _headers());
+    }
     return _handleResponse(response);
   }
 
   static Future<List<dynamic>> getList(String path) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(),
-    );
+    var response = await http.get(Uri.parse('$baseUrl$path'), headers: await _headers());
+    if (response.statusCode == 401 && await _refreshToken()) {
+      response = await http.get(Uri.parse('$baseUrl$path'), headers: await _headers());
+    }
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return jsonDecode(response.body) as List<dynamic>;
     }
@@ -50,28 +69,26 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> post(String path, {Map<String, dynamic>? body}) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(),
-      body: body != null ? jsonEncode(body) : null,
-    );
+    var response = await http.post(Uri.parse('$baseUrl$path'), headers: await _headers(), body: body != null ? jsonEncode(body) : null);
+    if (response.statusCode == 401 && await _refreshToken()) {
+      response = await http.post(Uri.parse('$baseUrl$path'), headers: await _headers(), body: body != null ? jsonEncode(body) : null);
+    }
     return _handleResponse(response);
   }
 
   static Future<Map<String, dynamic>> put(String path, {Map<String, dynamic>? body}) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(),
-      body: body != null ? jsonEncode(body) : null,
-    );
+    var response = await http.put(Uri.parse('$baseUrl$path'), headers: await _headers(), body: body != null ? jsonEncode(body) : null);
+    if (response.statusCode == 401 && await _refreshToken()) {
+      response = await http.put(Uri.parse('$baseUrl$path'), headers: await _headers(), body: body != null ? jsonEncode(body) : null);
+    }
     return _handleResponse(response);
   }
 
   static Future<void> delete(String path) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(),
-    );
+    var response = await http.delete(Uri.parse('$baseUrl$path'), headers: await _headers());
+    if (response.statusCode == 401 && await _refreshToken()) {
+      response = await http.delete(Uri.parse('$baseUrl$path'), headers: await _headers());
+    }
     if (response.statusCode >= 300) {
       throw ApiException(_extractError(response));
     }

@@ -4,7 +4,9 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final String? inviteCode;
+  final String? prefilledEmail;
+  const RegisterScreen({super.key, this.inviteCode, this.prefilledEmail});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -20,6 +22,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _inviteCodeC = TextEditingController();
   String _selectedRole = 'LANDLORD';
   bool _obscure = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.inviteCode != null) {
+      _inviteCodeC.text = widget.inviteCode!;
+      _selectedRole = 'TENANT';
+    }
+    if (widget.prefilledEmail != null) {
+      _emailC.text = widget.prefilledEmail!;
+    }
+  }
 
   @override
   void dispose() {
@@ -157,7 +171,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
-              validator: (v) => v == null || v.length < 6 ? 'Min 6 characters' : null,
+              validator: (v) => v == null || v.length < 8 ? 'Min 8 characters' : null,
             ),
             const SizedBox(height: 32),
             ElevatedButton(

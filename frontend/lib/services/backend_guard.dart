@@ -20,7 +20,7 @@ class BackendGuard {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         detectedRepo = data['repo'] as String?;
-        lifecycleEnrichment = data['lifecycleEnrichment'] == 'true';
+        lifecycleEnrichment = data['lifecycleEnrichment'] == true || data['lifecycleEnrichment'] == 'true';
         checked = true;
         return detectedRepo == expectedRepo;
       }
