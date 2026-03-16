@@ -1,0 +1,71 @@
+# === Java / Spring Boot ===
+backend/target/
+backend/*.jar
+backend/*.war
+backend/*.class
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# === IDE ===
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+*~
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Environment / Secrets ===
+.env
+.env.local
+.env.production
+*.env
+backend/src/main/resources/application-local.properties
+backend/src/main/resources/application-prod.properties
+
+# === Signing / Certificates / Keys ===
+*.keystore
+*.jks
+*.p12
+*.pem
+*.key
+*.crt
+key.properties
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+
+# === Flutter ===
+frontend/.dart_tool/
+frontend/.packages
+frontend/.pub-cache/
+frontend/.pub/
+frontend/build/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+frontend/ios/Flutter/Flutter.framework
+frontend/ios/Flutter/Flutter.podspec
+frontend/ios/Runner.xcworkspace/xcshareddata/
+frontend/ios/Runner.xcworkspace/xcuserdata/
+frontend/ios/Runner.xcodeproj/xcuserdata/
+frontend/ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+frontend/.metadata
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/android/app/debug/
+frontend/android/app/profile/
+frontend/android/app/release/
+
+# === Uploads / Local Storage ===
+uploads/
+storage/
+
+# === Logs ===
+*.log
+logs/

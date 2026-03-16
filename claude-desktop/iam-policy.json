@@ -1,0 +1,27 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ElasticBeanstalkDeploy",
+      "Effect": "Allow",
+      "Action": [
+        "elasticbeanstalk:*",
+        "autoscaling:*",
+        "ec2:Describe*",
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:CreateSecurityGroup",
+        "elasticloadbalancing:*",
+        "cloudwatch:*",
+        "logs:*",
+        "s3:*",
+        "cloudformation:*",
+        "iam:PassRole",
+        "iam:GetRole",
+        "iam:CreateServiceLinkedRole",
+        "rds:Describe*",
+        "sns:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+name: ayrnow
+description: "AYRNOW - Landlord-Tenant Property Management Platform"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  go_router: ^14.8.1
+  provider: ^6.1.2
+  http: ^1.2.2
+  shared_preferences: ^2.3.4
+  intl: ^0.19.0
+  image_picker: ^1.1.2
+  file_picker: ^8.1.6
+  url_launcher: ^6.3.1
+  flutter_secure_storage: ^9.2.4
+  signature: ^5.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
