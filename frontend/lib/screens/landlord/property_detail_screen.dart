@@ -165,14 +165,24 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> with Single
       if (units.isEmpty)
         const Padding(padding: EdgeInsets.all(32), child: Text('No units yet', style: TextStyle(color: AppColors.textSecondary)))
       else
-        ...units.map((u) => _UnitRow(unit: u, onTap: () => Navigator.push(context, MaterialPageRoute(
-          builder: (_) => EditUnitScreen(propertyId: widget.propertyId, unit: u, onSaved: _load))))),
-      InkWell(
-        onTap: () => Navigator.push(context, MaterialPageRoute(
+        ...units.map((u) => _GuidedUnitCard(
+          unit: u,
+          onEdit: () => Navigator.push(context, MaterialPageRoute(
+            builder: (_) => EditUnitScreen(propertyId: widget.propertyId, unit: u, onSaved: _load))),
+          onAction: () => Navigator.push(context, MaterialPageRoute(
+            builder: (_) => EditUnitScreen(propertyId: widget.propertyId, unit: u, onSaved: _load))),
+        )),
+      const SizedBox(height: 8),
+      OutlinedButton.icon(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(
           builder: (_) => EditUnitScreen(propertyId: widget.propertyId, onSaved: _load))),
-        child: const Padding(padding: EdgeInsets.symmetric(vertical: 12),
-          child: Row(children: [Icon(Icons.add, color: AppColors.primary, size: 20), SizedBox(width: 8),
-            Text('Add New Unit', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600))])),
+        icon: const Icon(Icons.add, size: 18),
+        label: const Text('Add New Unit'),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 44),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          side: BorderSide(color: AppColors.primary.withAlpha(60)),
+        ),
       ),
     ]);
   }
@@ -299,49 +309,199 @@ class _StatCircle extends StatelessWidget {
   }
 }
 
-class _UnitRow extends StatelessWidget {
+/// Guided unit card with 5-step workflow tracker and state-based CTA
+class _GuidedUnitCard extends StatelessWidget {
   final Map<String, dynamic> unit;
-  final VoidCallback onTap;
-  const _UnitRow({required this.unit, required this.onTap});
+  final VoidCallback onEdit;
+  final VoidCallback onAction;
+  const _GuidedUnitCard({required this.unit, required this.onEdit, required this.onAction});
+
+  _UnitStep get _currentStep {
+    final status = (unit['status'] ?? '').toString().toUpperCase();
+    if (status == 'OCCUPIED') return _UnitStep.active;
+    // Vacant — determine sub-step from available data
+    return _UnitStep.setup; // Default for vacant units: ready for invite
+  }
 
   @override
   Widget build(BuildContext context) {
+    final step = _currentStep;
     final isOccupied = unit['status'] == 'OCCUPIED';
-    return InkWell(
-      onTap: onTap,
+    final rent = unit['monthlyRent'];
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 0.5,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(children: [
-          // Unit badge
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              color: isOccupied ? AppColors.teal.withAlpha(20) : AppColors.warning.withAlpha(20),
-              borderRadius: BorderRadius.circular(10)),
-            child: Center(child: Text(
-              unit['name']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '?',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14,
-                color: isOccupied ? AppColors.teal : AppColors.warning))),
-          ),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(unit['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-            Text(unit['unitType'] ?? '', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-          ])),
-          if (unit['monthlyRent'] != null)
-            Text('\$${unit['monthlyRent']}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: isOccupied ? AppColors.teal.withAlpha(15) : AppColors.warning.withAlpha(15),
-              borderRadius: BorderRadius.circular(6)),
-            child: Text(isOccupied ? 'Occupied' : 'Vacant',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                color: isOccupied ? AppColors.teal : AppColors.warning)),
-          ),
-        ]),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Row 1: Unit identity + status badge
+            Row(children: [
+              // Unit icon badge
+              Container(
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  color: step.color.withAlpha(20),
+                  borderRadius: BorderRadius.circular(10)),
+                child: Center(child: Icon(
+                  isOccupied ? Icons.person : Icons.meeting_room_outlined,
+                  color: step.color, size: 20)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(unit['name'] ?? '', style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  Row(children: [
+                    Text(unit['unitType'] ?? '', style: const TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary)),
+                    if (rent != null) ...[
+                      const Text(' · ', style: TextStyle(color: AppColors.textSecondary)),
+                      Text('\$$rent/mo', style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    ],
+                  ]),
+                ],
+              )),
+              // Status badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: step.color.withAlpha(15),
+                  borderRadius: BorderRadius.circular(8)),
+                child: Text(step.badge, style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w700, color: step.color, letterSpacing: 0.3)),
+              ),
+            ]),
+            const SizedBox(height: 12),
+            // Row 2: Step progress tracker
+            _StepTracker(currentStep: step),
+            const SizedBox(height: 12),
+            // Row 3: Next step hint + actions
+            Row(children: [
+              Icon(step.icon, size: 14, color: step.color),
+              const SizedBox(width: 6),
+              Expanded(child: Text(step.hint, style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w500, color: step.color))),
+              // Edit button (secondary)
+              SizedBox(
+                height: 32,
+                child: OutlinedButton(
+                  onPressed: onEdit,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    side: const BorderSide(color: AppColors.border),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    foregroundColor: AppColors.textSecondary,
+                  ),
+                  child: const Text('Edit', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Primary CTA
+              SizedBox(
+                height: 32,
+                child: ElevatedButton(
+                  onPressed: onAction,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: step.color,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                  child: Text(step.cta, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ]),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+/// 5-step unit lifecycle
+enum _UnitStep {
+  setup(
+    stepNum: 0, badge: 'SETUP', hint: 'Ready for tenant invite',
+    cta: 'Invite', icon: Icons.person_add_outlined, color: AppColors.warning,
+  ),
+  invite(
+    stepNum: 1, badge: 'INVITE SENT', hint: 'Waiting for tenant response',
+    cta: 'Follow Up', icon: Icons.mail_outline, color: AppColors.primary,
+  ),
+  lease(
+    stepNum: 2, badge: 'NEEDS LEASE', hint: 'Create lease for tenant',
+    cta: 'Create Lease', icon: Icons.description_outlined, color: AppColors.primary,
+  ),
+  sign(
+    stepNum: 3, badge: 'SIGN PENDING', hint: 'Lease awaiting signatures',
+    cta: 'View Lease', icon: Icons.draw_outlined, color: AppColors.teal,
+  ),
+  active(
+    stepNum: 4, badge: 'ACTIVE', hint: 'Lease active · Collecting rent',
+    cta: 'Manage', icon: Icons.check_circle_outline, color: AppColors.success,
+  );
+
+  final int stepNum;
+  final String badge;
+  final String hint;
+  final String cta;
+  final IconData icon;
+  final Color color;
+  const _UnitStep({required this.stepNum, required this.badge, required this.hint,
+    required this.cta, required this.icon, required this.color});
+}
+
+/// Horizontal 5-step progress tracker
+class _StepTracker extends StatelessWidget {
+  final _UnitStep currentStep;
+  const _StepTracker({required this.currentStep});
+
+  static const _labels = ['Setup', 'Invite', 'Lease', 'Sign', 'Active'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(5, (i) {
+        final isComplete = i < currentStep.stepNum;
+        final isCurrent = i == currentStep.stepNum;
+        final isPending = i > currentStep.stepNum;
+        return Expanded(
+          child: Row(children: [
+            // Step dot
+            Container(
+              width: 20, height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isComplete ? AppColors.success
+                    : isCurrent ? currentStep.color
+                    : AppColors.surfaceLight,
+                border: Border.all(
+                  color: isComplete ? AppColors.success
+                      : isCurrent ? currentStep.color
+                      : AppColors.border,
+                  width: 1.5),
+              ),
+              child: Center(child: isComplete
+                ? const Icon(Icons.check, size: 12, color: Colors.white)
+                : Text('${i + 1}', style: TextStyle(
+                    fontSize: 9, fontWeight: FontWeight.w700,
+                    color: isCurrent ? Colors.white : AppColors.textSecondary))),
+            ),
+            // Connecting line (not after last)
+            if (i < 4) Expanded(child: Container(
+              height: 2,
+              color: isComplete ? AppColors.success : AppColors.border,
+            )),
+          ]),
+        );
+      }),
     );
   }
 }

@@ -5,7 +5,7 @@ import 'property_detail_screen.dart';
 import 'add_property_screen.dart';
 import '../shared/notifications_screen.dart';
 
-/// Wireframes C1 (empty) + C2 (populated)
+/// Wireframes C1 (empty) + C2 (populated) — Guided card-based property list
 class PropertyListScreen extends StatefulWidget {
   const PropertyListScreen({super.key});
 
@@ -127,15 +127,11 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
             Icon(Icons.add, size: 20), SizedBox(width: 8), Text('Add First Property'),
           ]),
         ),
-        const SizedBox(height: 16),
-        Center(child: TextButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Your data is encrypted and securely stored'))),
-          child: const Text('Learn how AYRNOW protects your data >',
-            style: TextStyle(color: AppColors.primary, fontSize: 13)))),
       ],
     );
   }
 
-  /// C2: Populated list
+  /// C2: Populated list with guided property cards
   Widget _buildPopulated() {
     final filtered = _filtered;
     return ListView(
@@ -175,29 +171,15 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
           ).toList()),
         ),
         const SizedBox(height: 12),
-        // Count + sort
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('${filtered.length} PROPERTIES FOUND',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary, letterSpacing: 0.3)),
-            TextButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sort options coming soon'))), child: const Text('Sort by: Recent',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary))),
-          ],
-        ),
-        const SizedBox(height: 8),
+        // Count
+        Text('${filtered.length} PROPERTIES', style: const TextStyle(
+          fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary, letterSpacing: 0.5)),
+        const SizedBox(height: 12),
         // Property cards
-        ...filtered.map((p) => _PropertyCard(
+        ...filtered.map((p) => _GuidedPropertyCard(
           property: p,
           onTap: () => Navigator.push(context, MaterialPageRoute(
             builder: (_) => PropertyDetailScreen(propertyId: p['id'], onChanged: _load))),
-          onView: () => Navigator.push(context, MaterialPageRoute(
-            builder: (_) => PropertyDetailScreen(propertyId: p['id'], onChanged: _load))),
-          onEdit: () => Navigator.push(context, MaterialPageRoute(
-            builder: (_) => PropertyDetailScreen(propertyId: p['id'] as int, onChanged: _load))),
-          onLease: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Navigate to Leases tab to create a lease for this property'))),
         )),
       ],
     );
@@ -210,133 +192,219 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
   }
 }
 
-class _PropertyCard extends StatelessWidget {
+/// Guided property card with progress indicator and smart next-step CTA
+class _GuidedPropertyCard extends StatelessWidget {
   final Map<String, dynamic> property;
   final VoidCallback onTap;
-  final VoidCallback onView;
-  final VoidCallback onEdit;
-  final VoidCallback onLease;
 
-  const _PropertyCard({required this.property, required this.onTap,
-    required this.onView, required this.onEdit, required this.onLease});
+  const _GuidedPropertyCard({required this.property, required this.onTap});
 
-  int get _occupancy {
-    final total = property['totalUnits'] ?? 0;
-    final occ = property['occupiedUnits'] ?? 0;
-    return total > 0 ? (occ * 100 ~/ total) : 0;
+  int get _totalUnits => (property['totalUnits'] ?? 0) as int;
+  int get _occupiedUnits => (property['occupiedUnits'] ?? 0) as int;
+  int get _vacantUnits => _totalUnits - _occupiedUnits;
+  int get _occupancy => _totalUnits > 0 ? (_occupiedUnits * 100 ~/ _totalUnits) : 0;
+
+  // Determine property-level workflow step
+  _PropertyStep get _step {
+    if (_totalUnits == 0) return _PropertyStep.addUnits;
+    if (_vacantUnits > 0 && _occupiedUnits == 0) return _PropertyStep.inviteTenants;
+    if (_vacantUnits > 0) return _PropertyStep.partiallyOccupied;
+    return _PropertyStep.fullyOccupied;
   }
-
-  Color get _occColor => _occupancy >= 90 ? AppColors.success : _occupancy >= 50 ? AppColors.warning : AppColors.error;
 
   @override
   Widget build(BuildContext context) {
+    final step = _step;
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 1,
       child: InkWell(
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image placeholder with occupancy badge
-            Stack(children: [
-              Container(
-                height: 160, width: double.infinity,
-                color: AppColors.primary.withAlpha(15),
-                child: const Center(child: Icon(Icons.apartment, size: 56, color: AppColors.primary)),
-              ),
-              Positioned(top: 12, left: 12, child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: _occColor, borderRadius: BorderRadius.circular(20)),
-                child: Text('$_occupancy% Occupied',
-                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-              )),
-            ]),
-            Padding(
+            // Header with property type icon and status
+            Container(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [step.color.withAlpha(15), step.color.withAlpha(5)],
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                ),
+              ),
+              child: Row(
                 children: [
-                  Row(children: [
-                    Expanded(child: Text(property['name'] ?? '',
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700))),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(color: AppColors.surfaceLight, borderRadius: BorderRadius.circular(6)),
-                      child: Text(property['propertyType'] ?? '',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+                  // Property type icon
+                  Container(
+                    width: 48, height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 8)],
                     ),
-                  ]),
-                  const SizedBox(height: 6),
-                  Row(children: [
-                    const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
-                    const SizedBox(width: 4),
-                    Expanded(child: Text(
-                      '${property['address']}, ${property['city']}, ${property['state']}',
-                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                      overflow: TextOverflow.ellipsis)),
-                  ]),
-                  const SizedBox(height: 12),
-                  Row(children: [
-                    _InfoChip(Icons.apartment, '${property['totalUnits']} Total Units'),
-                    const SizedBox(width: 12),
-                    _InfoChip(Icons.people, '$_occupancy%'),
-                  ]),
-                  const SizedBox(height: 12),
-                  // Action buttons row
-                  Row(children: [
-                    _ActionBtn('VIEW', Icons.visibility_outlined, onView),
-                    const SizedBox(width: 8),
-                    _ActionBtn('EDIT', Icons.edit_outlined, onEdit),
-                    const SizedBox(width: 8),
-                    _ActionBtn('LEASE', Icons.description_outlined, onLease),
-                  ]),
+                    child: Icon(_propertyIcon, color: AppColors.primary, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Expanded(child: Text(property['name'] ?? '', style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textDark))),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: step.color.withAlpha(20),
+                            borderRadius: BorderRadius.circular(6)),
+                          child: Text(step.badge, style: TextStyle(
+                            fontSize: 10, fontWeight: FontWeight.w700, color: step.color)),
+                        ),
+                      ]),
+                      const SizedBox(height: 4),
+                      Row(children: [
+                        const Icon(Icons.location_on_outlined, size: 13, color: AppColors.textSecondary),
+                        const SizedBox(width: 3),
+                        Expanded(child: Text(
+                          '${property['address']}, ${property['city']}',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          overflow: TextOverflow.ellipsis)),
+                      ]),
+                    ],
+                  )),
                 ],
               ),
+            ),
+            // Stats row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(children: [
+                _MiniStat(Icons.apartment, '$_totalUnits', 'Units'),
+                _MiniStat(Icons.person, '$_occupiedUnits', 'Occupied'),
+                _MiniStat(Icons.meeting_room_outlined, '$_vacantUnits', 'Vacant'),
+                // Occupancy bar
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('$_occupancy%', style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w700,
+                      color: _occupancy >= 80 ? AppColors.success : _occupancy >= 40 ? AppColors.warning : AppColors.textSecondary)),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: _occupancy / 100,
+                        minHeight: 4,
+                        backgroundColor: AppColors.border,
+                        valueColor: AlwaysStoppedAnimation(
+                          _occupancy >= 80 ? AppColors.success : _occupancy >= 40 ? AppColors.warning : AppColors.textSecondary),
+                      ),
+                    ),
+                  ],
+                )),
+              ]),
+            ),
+            // Next step guidance + primary CTA
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Row(children: [
+                // Next step hint
+                Expanded(child: Row(children: [
+                  Icon(step.icon, size: 16, color: step.color),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(step.hint, style: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w500, color: step.color))),
+                ])),
+                // Primary CTA
+                SizedBox(
+                  height: 34,
+                  child: ElevatedButton(
+                    onPressed: onTap,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: step.color,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 0,
+                    ),
+                    child: Text(step.cta, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ]),
             ),
           ],
         ),
       ),
     );
   }
-}
 
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _InfoChip(this.icon, this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 14, color: AppColors.textSecondary),
-      const SizedBox(width: 4),
-      Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-    ]);
+  IconData get _propertyIcon {
+    switch ((property['propertyType'] ?? '').toString().toUpperCase()) {
+      case 'RESIDENTIAL': return Icons.home;
+      case 'COMMERCIAL': return Icons.store;
+      default: return Icons.apartment;
+    }
   }
 }
 
-class _ActionBtn extends StatelessWidget {
-  final String label;
+enum _PropertyStep {
+  addUnits(
+    badge: 'SETUP',
+    hint: 'Add units to get started',
+    cta: 'Add Units',
+    icon: Icons.add_circle_outline,
+    color: AppColors.warning,
+  ),
+  inviteTenants(
+    badge: 'READY',
+    hint: 'Invite tenants to fill units',
+    cta: 'View Units',
+    icon: Icons.person_add_outlined,
+    color: AppColors.primary,
+  ),
+  partiallyOccupied(
+    badge: 'ACTIVE',
+    hint: 'Some units need tenants',
+    cta: 'Manage',
+    icon: Icons.trending_up,
+    color: AppColors.teal,
+  ),
+  fullyOccupied(
+    badge: 'FULL',
+    hint: 'All units occupied',
+    cta: 'Manage',
+    icon: Icons.check_circle_outline,
+    color: AppColors.success,
+  );
+
+  final String badge;
+  final String hint;
+  final String cta;
   final IconData icon;
-  final VoidCallback onTap;
-  const _ActionBtn(this.label, this.icon, this.onTap);
+  final Color color;
+  const _PropertyStep({required this.badge, required this.hint, required this.cta,
+    required this.icon, required this.color});
+}
+
+class _MiniStat extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  const _MiniStat(this.icon, this.value, this.label);
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 14),
-        label: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          side: const BorderSide(color: AppColors.border),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          foregroundColor: AppColors.textSecondary,
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: Column(children: [
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 13, color: AppColors.textSecondary),
+          const SizedBox(width: 3),
+          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+        ]),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+      ]),
     );
   }
 }
