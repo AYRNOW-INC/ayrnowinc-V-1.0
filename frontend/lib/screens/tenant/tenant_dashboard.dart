@@ -89,7 +89,16 @@ class _TenantDashboardState extends State<TenantDashboard> {
       // Onboarding checklist
       const Text('Onboarding Checklist', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
       const SizedBox(height: 4),
-      Text('65% Complete', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+      Builder(builder: (_) {
+        int done = 0;
+        if (_stats?['hasProfile'] == true || (_stats?['profileComplete'] ?? false)) done++;
+        if ((_stats?['documentsUploaded'] ?? 0) > 0) done++;
+        if ((_stats?['activeLeases'] ?? 0) > 0) done++;
+        if ((_stats?['totalPayments'] ?? 0) > 0) done++;
+        if (done == 0) done = 1;
+        final pct = (done / 4 * 100).round();
+        return Text('$pct% Complete', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600));
+      }),
       const SizedBox(height: 12),
       _CheckItem(Icons.verified, 'Verify Identity', true),
       _CheckItem(Icons.description, 'Review & Sign Lease', false),
@@ -179,8 +188,11 @@ class _TenantDashboardState extends State<TenantDashboard> {
           MaterialPageRoute(builder: (_) => const TenantPaymentScreen()))),
         const SizedBox(width: 12),
         _ActionButton(Icons.build, 'Maintenance', () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Maintenance requests coming soon')));
+          showDialog(context: context, builder: (_) => AlertDialog(
+            title: const Text('Maintenance Requests'),
+            content: const Text('Maintenance request functionality will be available in a future update. For urgent issues, please contact your landlord directly.'),
+            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+          ));
         }),
       ]),
       const SizedBox(height: 20),
@@ -188,7 +200,8 @@ class _TenantDashboardState extends State<TenantDashboard> {
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         const Text('RECENT ACTIVITY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
           color: AppColors.textSecondary, letterSpacing: 0.5)),
-        TextButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Full activity history coming soon'))), child: const Text('View All')),
+        TextButton(onPressed: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const NotificationsScreen())), child: const Text('View All')),
       ]),
       _ActivityRow(Icons.attach_money, AppColors.success, 'Payment activity', 'Check payments tab'),
       _ActivityRow(Icons.description, AppColors.primary, 'Lease activity', 'Check leases tab'),

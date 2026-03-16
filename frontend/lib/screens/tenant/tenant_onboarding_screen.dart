@@ -1,16 +1,48 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../services/api_service.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import 'document_screen.dart';
+import 'tenant_lease_screen.dart';
+import 'tenant_payment_screen.dart';
 
 /// Wireframe K3: Tenant Onboarding with progress checklist
-class TenantOnboardingScreen extends StatelessWidget {
+class TenantOnboardingScreen extends StatefulWidget {
   const TenantOnboardingScreen({super.key});
+
+  @override
+  State<TenantOnboardingScreen> createState() => _TenantOnboardingScreenState();
+}
+
+class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
+  int _done = 1;
+  final int _total = 4;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    try {
+      final data = await ApiService.get('/dashboard/tenant');
+      int done = 0;
+      if (data['hasProfile'] == true || (data['profileComplete'] ?? false)) done++;
+      if ((data['documentsUploaded'] ?? 0) > 0) done++;
+      if ((data['activeLeases'] ?? 0) > 0) done++;
+      if ((data['totalPayments'] ?? 0) > 0) done++;
+      if (done == 0) done = 1; // at minimum account is verified
+      if (mounted) setState(() => _done = done);
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final name = auth.user?['firstName'] ?? 'there';
+    final pct = (_done / _total * 100).round();
 
     return Scaffold(
       appBar: AppBar(
@@ -35,15 +67,15 @@ class TenantOnboardingScreen extends StatelessWidget {
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Text('Almost there, $name!', style: const TextStyle(fontSize: 20,
                   fontWeight: FontWeight.w700, color: Colors.white)),
-                const Text('25%\nCOMPLETE', textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                Text('$pct%\nCOMPLETE', textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
               ]),
               const SizedBox(height: 12),
               ClipRRect(borderRadius: BorderRadius.circular(4),
-                child: const LinearProgressIndicator(value: 0.25, minHeight: 6,
-                  backgroundColor: Colors.white24, valueColor: AlwaysStoppedAnimation(Colors.white))),
+                child: LinearProgressIndicator(value: _done / _total, minHeight: 6,
+                  backgroundColor: Colors.white24, valueColor: const AlwaysStoppedAnimation(Colors.white))),
               const SizedBox(height: 4),
-              const Text('1 of 4 tasks completed', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              Text('$_done of $_total tasks completed', style: const TextStyle(color: Colors.white70, fontSize: 12)),
             ]),
           ),
           const SizedBox(height: 24),
@@ -52,16 +84,19 @@ class TenantOnboardingScreen extends StatelessWidget {
             color: AppColors.textSecondary, letterSpacing: 0.5)),
           const SizedBox(height: 16),
           _Step(Icons.person_outline, 'Complete Profile',
-            'Personal info and contact details', true, null),
+            'Personal info and contact details', true, null, null),
           const SizedBox(height: 12),
           _Step(Icons.upload_file, 'Upload Documents',
-            'Government ID and Proof of Income', false, 'Start >'),
+            'Government ID and Proof of Income', _done >= 2, 'Start >',
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DocumentScreen()))),
           const SizedBox(height: 12),
           _Step(Icons.credit_card, 'Add Payment Method',
-            'Link your bank for rent payments', false, 'Start >'),
+            'Link your bank for rent payments', _done >= 4, 'Start >',
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TenantPaymentScreen()))),
           const SizedBox(height: 12),
           _Step(Icons.description, 'Review Lease',
-            'Sign your new residential agreement', false, null),
+            'Sign your new residential agreement', _done >= 3, 'Start >',
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TenantLeaseScreen()))),
           const SizedBox(height: 24),
           // Pro-tip
           Container(
@@ -82,7 +117,8 @@ class TenantOnboardingScreen extends StatelessWidget {
             ]),
           ),
           const SizedBox(height: 24),
-          ElevatedButton(onPressed: () => Navigator.pop(context),
+          ElevatedButton(onPressed: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const TenantLeaseScreen())),
             style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 56),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
             child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -99,34 +135,38 @@ class _Step extends StatelessWidget {
   final String subtitle;
   final bool done;
   final String? action;
+  final VoidCallback? onTap;
 
-  const _Step(this.icon, this.title, this.subtitle, this.done, this.action);
+  const _Step(this.icon, this.title, this.subtitle, this.done, this.action, this.onTap);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: done ? AppColors.success.withAlpha(50) : AppColors.border, width: 0.5)),
-      child: Row(children: [
-        Container(width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: (done ? AppColors.success : AppColors.primary).withAlpha(15),
-            borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, color: done ? AppColors.success : AppColors.primary, size: 20)),
-        const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
-            color: done ? AppColors.textSecondary : AppColors.textDark)),
-          Text(subtitle, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-        ])),
-        if (done)
-          const Text('DONE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.success))
-        else if (action != null)
-          Text(action!, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary))
-        else
-          const Icon(Icons.radio_button_unchecked, color: AppColors.border, size: 22),
-      ]),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: done ? AppColors.success.withAlpha(50) : AppColors.border, width: 0.5)),
+        child: Row(children: [
+          Container(width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: (done ? AppColors.success : AppColors.primary).withAlpha(15),
+              borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: done ? AppColors.success : AppColors.primary, size: 20)),
+          const SizedBox(width: 14),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
+              color: done ? AppColors.textSecondary : AppColors.textDark)),
+            Text(subtitle, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          ])),
+          if (done)
+            const Text('DONE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.success))
+          else if (action != null)
+            Text(action!, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary))
+          else
+            const Icon(Icons.radio_button_unchecked, color: AppColors.border, size: 22),
+        ]),
+      ),
     );
   }
 }

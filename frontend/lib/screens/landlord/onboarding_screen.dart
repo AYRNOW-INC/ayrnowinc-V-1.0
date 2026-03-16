@@ -1,13 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../shared/notifications_screen.dart';
 import 'add_property_screen.dart';
 
-class LandlordOnboardingScreen extends StatelessWidget {
+class LandlordOnboardingScreen extends StatefulWidget {
   const LandlordOnboardingScreen({super.key});
 
   @override
+  State<LandlordOnboardingScreen> createState() => _LandlordOnboardingScreenState();
+}
+
+class _LandlordOnboardingScreenState extends State<LandlordOnboardingScreen> {
+  int _done = 1;
+  int _total = 4;
+  bool _propertyDone = false;
+  bool _inviteDone = false;
+  bool _leaseDone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    try {
+      final stats = await ApiService.get('/dashboard/landlord');
+      if (!mounted) return;
+      final hasProperty = (stats['totalProperties'] ?? 0) > 0;
+      final hasInvite = (stats['occupiedUnits'] ?? 0) > 0;
+      final hasLease = (stats['activeLeases'] ?? 0) > 0;
+      int done = 1; // account verified is always done
+      if (hasProperty) done++;
+      if (hasInvite) done++;
+      if (hasLease) done++;
+      setState(() {
+        _propertyDone = hasProperty;
+        _inviteDone = hasInvite;
+        _leaseDone = hasLease;
+        _done = done;
+        _total = 4; // verified + property + invite + lease
+      });
+    } catch (_) {
+      // Keep defaults on error
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final name = auth.user?['firstName'] ?? auth.user?['name'] ?? 'there';
+    final pct = (_done * 100 ~/ _total);
+    final progress = _done / _total;
+
     return Scaffold(
       appBar: AppBar(
         leading: Padding(
@@ -27,8 +75,8 @@ class LandlordOnboardingScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         children: [
           // Welcome header
-          const Text('Welcome, Michael!',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+          Text('Welcome, $name!',
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textDark)),
           const SizedBox(height: 4),
           const Text("Let's get your first property ready.",
             style: TextStyle(fontSize: 15, color: AppColors.textSecondary)),
@@ -48,19 +96,19 @@ class LandlordOnboardingScreen extends StatelessWidget {
                   children: [
                     const Text('SETUP PROGRESS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                       color: AppColors.textSecondary, letterSpacing: 0.5)),
-                    const Text('33%', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                    Text('$pct%', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary)),
                   ],
                 ),
                 const SizedBox(height: 4),
-                const Text('1 of 3 steps completed',
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                Text('$_done of $_total steps completed',
+                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: const LinearProgressIndicator(
-                    value: 0.33, minHeight: 6,
+                  child: LinearProgressIndicator(
+                    value: progress, minHeight: 6,
                     backgroundColor: AppColors.border,
-                    valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                    valueColor: const AlwaysStoppedAnimation(AppColors.primary),
                   ),
                 ),
               ],
@@ -73,7 +121,7 @@ class LandlordOnboardingScreen extends StatelessWidget {
             children: [
               const Text('Onboarding Checklist',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-              Text('Step 1 of 3', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+              Text('Step $_done of $_total', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
             ],
           ),
           const SizedBox(height: 16),
@@ -85,27 +133,27 @@ class LandlordOnboardingScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _ChecklistItem(
-            icon: Icons.apartment, color: AppColors.primary,
+            icon: Icons.apartment, color: _propertyDone ? AppColors.success : AppColors.primary,
             title: 'Add Your First Property',
             subtitle: 'Register your building or unit to start managing leases.',
-            completed: false,
-            actionLabel: 'Start Now >',
-            onAction: () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => AddPropertyScreen(onCreated: () {}))),
+            completed: _propertyDone,
+            actionLabel: _propertyDone ? null : 'Start Now >',
+            onAction: _propertyDone ? null : () => Navigator.push(context, MaterialPageRoute(
+              builder: (_) => AddPropertyScreen(onCreated: () { _loadProgress(); }))),
           ),
           const SizedBox(height: 12),
           _ChecklistItem(
-            icon: Icons.people_outline, color: AppColors.textSecondary,
+            icon: Icons.people_outline, color: _inviteDone ? AppColors.success : AppColors.textSecondary,
             title: 'Invite Your Tenants',
             subtitle: 'Once a property is added, invite tenants to join AYRNOW.',
-            completed: false,
+            completed: _inviteDone,
           ),
           const SizedBox(height: 12),
           _ChecklistItem(
-            icon: Icons.description_outlined, color: AppColors.textSecondary,
+            icon: Icons.description_outlined, color: _leaseDone ? AppColors.success : AppColors.textSecondary,
             title: 'Setup Digital Leases',
             subtitle: 'Create lease templates, security deposits and rental terms.',
-            completed: false,
+            completed: _leaseDone,
           ),
           const SizedBox(height: 32),
           // Help card
@@ -142,7 +190,7 @@ class LandlordOnboardingScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () => Navigator.push(context, MaterialPageRoute(
-          builder: (_) => AddPropertyScreen(onCreated: () {}))),
+          builder: (_) => AddPropertyScreen(onCreated: () { _loadProgress(); }))),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

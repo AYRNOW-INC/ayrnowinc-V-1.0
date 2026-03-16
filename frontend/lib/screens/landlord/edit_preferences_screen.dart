@@ -37,6 +37,11 @@ class _EditPreferencesScreenState extends State<EditPreferencesScreen> {
         'firstName': parts.first,
         'lastName': parts.length > 1 ? parts.sublist(1).join(' ') : '',
         'phone': _phoneC.text.trim(),
+        'notificationPreferences': {
+          'pushNotifications': _pushNotif,
+          'emailSummaries': _emailSummary,
+          'smsReminders': _smsReminder,
+        },
       });
       if (mounted) {
         context.read<AuthProvider>().checkAuth();
@@ -101,7 +106,11 @@ class _EditPreferencesScreenState extends State<EditPreferencesScreen> {
               Text('Default Lease Template', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
               Text('Standard Residential', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
             ])),
-            TextButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lease template management coming soon'))), child: const Text('Change')),
+            TextButton(onPressed: () => showDialog(context: context, builder: (_) => AlertDialog(
+              title: const Text('Lease Templates'),
+              content: const Text('Lease template customization is managed through the Lease Settings on each property. Navigate to a property and select "Lease Settings" from the menu.'),
+              actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+            )), child: const Text('Change')),
           ]),
         ),
         const SizedBox(height: 8),

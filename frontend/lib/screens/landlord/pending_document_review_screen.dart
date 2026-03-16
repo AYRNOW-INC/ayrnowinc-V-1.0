@@ -68,7 +68,7 @@ class _PendingDocumentReviewScreenState extends State<PendingDocumentReviewScree
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('AWAITING APPROVAL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary, letterSpacing: 0.5)),
-                IconButton(icon: const Icon(Icons.filter_list, size: 20), onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Filter options coming soon')))),
+                IconButton(icon: const Icon(Icons.filter_list, size: 20), onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Documents are sorted by submission date')))),
               ]),
               ..._pending.map((d) => _DocCard(doc: d, onApprove: () => _review(d['id'], 'APPROVED'),
                 onRequestChanges: () => _review(d['id'], 'REJECTED'))),

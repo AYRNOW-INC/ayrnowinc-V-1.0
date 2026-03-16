@@ -109,12 +109,14 @@ class _SigningStatusScreenState extends State<SigningStatusScreen> {
             subtitle: 'Prepared by ${l['landlordName']}',
             done: _progress >= 1,
             current: _progress == 1,
+            leaseId: widget.leaseId,
           ),
           _TimelineItem(
             title: 'Sent for Signature',
             subtitle: 'Email sent to ${l['tenantName']}',
             done: _progress >= 2,
             current: _progress == 2,
+            leaseId: widget.leaseId,
           ),
           _TimelineItem(
             title: 'Landlord Signed',
@@ -122,6 +124,7 @@ class _SigningStatusScreenState extends State<SigningStatusScreen> {
             done: landlordSigned,
             current: !landlordSigned && _progress >= 2,
             action: !landlordSigned && _progress >= 2 ? 'Send Reminder' : null,
+            leaseId: widget.leaseId,
           ),
           _TimelineItem(
             title: 'Tenant Signature Required',
@@ -129,6 +132,7 @@ class _SigningStatusScreenState extends State<SigningStatusScreen> {
             done: tenantSigned,
             current: !tenantSigned && landlordSigned,
             action: !tenantSigned && _progress >= 2 ? 'Send Reminder' : null,
+            leaseId: widget.leaseId,
           ),
           _TimelineItem(
             title: 'Fully Executed',
@@ -136,6 +140,7 @@ class _SigningStatusScreenState extends State<SigningStatusScreen> {
             done: l['status'] == 'FULLY_EXECUTED',
             current: false,
             isLast: true,
+            leaseId: widget.leaseId,
           ),
           const SizedBox(height: 24),
           // Document card
@@ -180,11 +185,12 @@ class _TimelineItem extends StatelessWidget {
   final bool current;
   final String? action;
   final bool isLast;
+  final int? leaseId;
 
   const _TimelineItem({
     required this.title, required this.subtitle,
     required this.done, required this.current,
-    this.action, this.isLast = false,
+    this.action, this.isLast = false, this.leaseId,
   });
 
   @override
@@ -210,20 +216,53 @@ class _TimelineItem extends StatelessWidget {
           Text(subtitle, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
           if (action != null) ...[
             const SizedBox(height: 6),
-            OutlinedButton.icon(
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Reminder sent to signer'))),
-              icon: const Icon(Icons.send, size: 14),
-              label: Text(action!, style: const TextStyle(fontSize: 12)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                minimumSize: Size.zero,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
+            _ReminderButton(action: action!, leaseId: leaseId),
           ],
         ]),
       )),
     ]));
+  }
+}
+
+class _ReminderButton extends StatefulWidget {
+  final String action;
+  final int? leaseId;
+  const _ReminderButton({required this.action, this.leaseId});
+
+  @override
+  State<_ReminderButton> createState() => _ReminderButtonState();
+}
+
+class _ReminderButtonState extends State<_ReminderButton> {
+  bool _sending = false;
+
+  Future<void> _sendReminder() async {
+    if (widget.leaseId == null) return;
+    setState(() => _sending = true);
+    try {
+      await ApiService.post('/leases/${widget.leaseId}/remind', body: {});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reminder sent successfully!'), backgroundColor: AppColors.success));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send reminder: $e'), backgroundColor: Colors.red));
+    }
+    if (mounted) setState(() => _sending = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: _sending ? null : _sendReminder,
+      icon: _sending
+        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+        : const Icon(Icons.send, size: 14),
+      label: Text(widget.action, style: const TextStyle(fontSize: 12)),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        minimumSize: Size.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
   }
 }

@@ -182,20 +182,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      // Google button (deferred — native OAuth planned for future release)
+                      // Google button (deferred — requires Authgear configuration)
                       _SocialButton(
                         icon: Icons.g_mobiledata,
                         label: 'Google',
-                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Google sign-in coming soon'))),
+                        onTap: () => showDialog(context: context, builder: (_) => AlertDialog(
+                          title: const Text('Social Sign-In'),
+                          content: const Text('Google and Apple sign-in will be available once Authgear is configured. For now, please use email and password.'),
+                          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+                        )),
                       ),
                       const SizedBox(height: 12),
-                      // Apple button (deferred — native OAuth planned for future release)
+                      // Apple button (deferred — requires Authgear configuration)
                       _SocialButton(
                         icon: Icons.apple,
                         label: 'Apple',
-                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Apple sign-in coming soon'))),
+                        onTap: () => showDialog(context: context, builder: (_) => AlertDialog(
+                          title: const Text('Social Sign-In'),
+                          content: const Text('Google and Apple sign-in will be available once Authgear is configured. For now, please use email and password.'),
+                          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+                        )),
                       ),
                       const SizedBox(height: 40),
                       // Create account footer

@@ -754,8 +754,11 @@ class _LeaseSettingsScreenState extends State<_LeaseSettingsScreen> {
               _ClauseItem('Pet Policy (Standard)', false),
               _ClauseItem('Subletting Prohibition', true),
               const SizedBox(height: 8),
-              TextButton.icon(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Custom clause management coming soon'))),
+              TextButton.icon(onPressed: () => showDialog(context: context, builder: (_) => AlertDialog(
+                title: const Text('Custom Clauses'),
+                content: const Text('Custom clause management allows you to add property-specific terms beyond the standard set. This feature will be available in a future update.'),
+                actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+              )),
                 icon: const Icon(Icons.add, size: 16), label: const Text('Manage Custom Clauses', style: TextStyle(fontSize: 13))),
               if (_editing) ...[
                 const SizedBox(height: 24),

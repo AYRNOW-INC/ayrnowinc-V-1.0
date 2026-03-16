@@ -70,12 +70,20 @@ class PaymentSuccessScreen extends StatelessWidget {
           const SizedBox(height: 20),
           // Actions
           Row(children: [
-            Expanded(child: OutlinedButton.icon(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Feature coming soon'))),
+            Expanded(child: OutlinedButton.icon(onPressed: () => showDialog(context: context, builder: (_) => AlertDialog(
+              title: const Text('Save Receipt'),
+              content: Text('Transaction #ARN-${payment['id'] ?? '0000'}\nAmount: \$${payment['amount'] ?? '0.00'}\nStatus: Completed\n\nPDF receipts will be available once Stripe integration is configured with your account.'),
+              actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+            )),
               icon: const Icon(Icons.save_alt, size: 16), label: const Text('Save PDF'),
               style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))))),
             const SizedBox(width: 12),
-            Expanded(child: OutlinedButton.icon(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Feature coming soon'))),
+            Expanded(child: OutlinedButton.icon(onPressed: () => showDialog(context: context, builder: (_) => AlertDialog(
+              title: const Text('Share Receipt'),
+              content: Text('Payment Receipt\n\nTransaction: #ARN-${payment['id'] ?? '0000'}\nAmount: \$${payment['amount'] ?? '0.00'}\nProperty: ${payment['propertyName'] ?? ''}\nUnit: ${payment['unitName'] ?? ''}\n\nCopy this information to share with your records.'),
+              actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+            )),
               icon: const Icon(Icons.share, size: 16), label: const Text('Share'),
               style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))))),

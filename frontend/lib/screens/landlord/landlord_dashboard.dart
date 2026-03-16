@@ -19,6 +19,7 @@ class _LandlordDashboardState extends State<LandlordDashboard> {
   Map<String, dynamic>? _stats;
   bool _loading = true;
   String? _error;
+  List<dynamic> _activity = [];
 
   @override
   void initState() {
@@ -31,13 +32,62 @@ class _LandlordDashboardState extends State<LandlordDashboard> {
     try {
       final stats = await ApiService.get('/dashboard/landlord');
       if (mounted) setState(() { _stats = stats; _loading = false; });
+      _loadActivity();
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
   }
 
+  Future<void> _loadActivity() async {
+    try {
+      final data = await ApiService.get('/notifications');
+      if (mounted) {
+        final List<dynamic> list = data['content'] is List
+            ? (data['content'] as List)
+            : <dynamic>[];
+        setState(() { _activity = list.length > 5 ? list.sublist(0, 5) : list; });
+      }
+    } catch (_) {
+      // Activity is non-critical; keep empty list
+    }
+  }
+
   bool get _isEmpty =>
     (_stats?['totalProperties'] ?? 0) == 0;
+
+  IconData _activityIcon(String type) {
+    switch (type.toUpperCase()) {
+      case 'PAYMENT': return Icons.attach_money;
+      case 'LEASE': return Icons.description;
+      case 'INVITE': return Icons.person_add;
+      case 'MOVE_OUT': return Icons.exit_to_app;
+      default: return Icons.notifications;
+    }
+  }
+
+  Color _activityColor(String type) {
+    switch (type.toUpperCase()) {
+      case 'PAYMENT': return AppColors.success;
+      case 'LEASE': return AppColors.primary;
+      case 'INVITE': return AppColors.teal;
+      case 'MOVE_OUT': return AppColors.warning;
+      default: return AppColors.textSecondary;
+    }
+  }
+
+  String _formatTime(dynamic createdAt) {
+    if (createdAt == null) return '';
+    try {
+      final dt = DateTime.parse(createdAt.toString());
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${dt.month}/${dt.day}';
+    } catch (_) {
+      return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -235,17 +285,25 @@ class _LandlordDashboardState extends State<LandlordDashboard> {
           children: [
             const Text('Recent Activity',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-            TextButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Full activity feed coming soon'))), child: const Text('View All')),
+            TextButton(onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const NotificationsScreen())), child: const Text('View All')),
           ],
         ),
-        // Activity items (static for now, will be dynamic with backend addition)
-        _ActivityItem(
-          icon: Icons.attach_money, color: AppColors.success,
-          title: 'Rent Received', subtitle: 'Check your payments tab', time: 'Recent'),
-        _ActivityItem(
-          icon: Icons.description, color: AppColors.primary,
-          title: 'Lease Activity', subtitle: 'Review your leases', time: 'Recent'),
+        // Activity items from notifications API
+        if (_activity.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: Text('No recent activity',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary))),
+          )
+        else
+          ..._activity.map((n) => _ActivityItem(
+            icon: _activityIcon(n['type'] ?? ''),
+            color: _activityColor(n['type'] ?? ''),
+            title: n['title'] ?? n['message'] ?? 'Notification',
+            subtitle: n['message'] ?? n['body'] ?? '',
+            time: _formatTime(n['createdAt']),
+          )),
         const SizedBox(height: 16),
         // Promo card
         Container(

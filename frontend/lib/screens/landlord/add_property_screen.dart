@@ -334,7 +334,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
             : const Text('Save & Create Property'),
         ),
         const SizedBox(height: 8),
-        Center(child: TextButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft saving coming soon'))), child: const Text('Save as Draft'))),
+        Center(child: TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel'))),
       ]),
     );
   }
