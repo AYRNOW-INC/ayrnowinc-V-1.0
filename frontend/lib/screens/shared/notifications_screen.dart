@@ -12,6 +12,7 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   List<dynamic> _notifications = [];
   bool _loading = true;
+  String _selectedFilter = 'All';
 
   @override
   void initState() { super.initState(); _load(); }
@@ -67,6 +68,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Text("You're all caught up!", style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
               ]))
             : ListView(padding: const EdgeInsets.all(16), children: [
+                // Filter chips
+                SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
+                  children: ['All', 'LEASE', 'PAYMENT', 'INVITE', 'DOCUMENT', 'MOVE_OUT'].map((f) =>
+                    Padding(padding: const EdgeInsets.only(right: 8), child: ChoiceChip(
+                      label: Text(f == 'All' ? 'All' : f.replaceAll('_', ' ')),
+                      selected: _selectedFilter == f,
+                      onSelected: (_) => setState(() => _selectedFilter = f),
+                      selectedColor: AppColors.primary,
+                      labelStyle: TextStyle(color: _selectedFilter == f ? Colors.white : AppColors.textSecondary, fontSize: 12),
+                    ))).toList())),
+                const SizedBox(height: 12),
                 if (_unread > 0) Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -78,7 +90,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                   ]),
                 ),
-                ..._notifications.map((n) => Container(
+                ..._notifications.where((n) => _selectedFilter == 'All' || n['type'] == _selectedFilter).map((n) => Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
                     color: n['read'] == false ? AppColors.primary.withAlpha(5) : Colors.white,

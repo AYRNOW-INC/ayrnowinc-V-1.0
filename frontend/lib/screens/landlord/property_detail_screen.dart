@@ -67,6 +67,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> with Single
             const PopupMenuItem(value: 'delete', child: Text('Delete Property')),
           ], onSelected: (v) {
             if (v == 'settings') _showLeaseSettings();
+            if (v == 'edit') {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Edit property coming soon')));
+            }
+            if (v == 'delete') _confirmDelete();
           }),
         ],
       ),
@@ -265,6 +270,38 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> with Single
         )).toList());
       },
     );
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Property'),
+        content: const Text('Are you sure you want to delete this property? This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      try {
+        await ApiService.delete('/properties/${widget.propertyId}');
+        if (mounted) {
+          widget.onChanged();
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete: $e'), backgroundColor: AppColors.error));
+        }
+      }
+    }
   }
 
   void _showLeaseSettings() {

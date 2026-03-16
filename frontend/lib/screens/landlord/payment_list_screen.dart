@@ -14,6 +14,7 @@ class LandlordPaymentScreen extends StatefulWidget {
 class _LandlordPaymentScreenState extends State<LandlordPaymentScreen> {
   List<dynamic> _properties = [];
   Map<String, dynamic>? _stats;
+  List<dynamic> _allPayments = [];
   bool _loading = true;
   String _filter = 'All';
 
@@ -24,11 +25,46 @@ class _LandlordPaymentScreenState extends State<LandlordPaymentScreen> {
     try {
       _properties = await ApiService.getList('/properties');
       _stats = await ApiService.get('/dashboard/landlord');
+      // Aggregate payments from all properties for stats
+      final payments = <dynamic>[];
+      for (final p in _properties) {
+        try {
+          final pPayments = await ApiService.getList('/payments/property/${p['id']}');
+          payments.addAll(pPayments);
+        } catch (_) {}
+      }
+      _allPayments = payments;
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to load payments'), backgroundColor: Colors.red));
     }
     if (mounted) setState(() => _loading = false);
+  }
+
+  double get _outstanding {
+    double total = 0;
+    for (final p in _allPayments) {
+      final status = (p['status'] ?? '').toString().toUpperCase();
+      if (status == 'PENDING' || status == 'OVERDUE') {
+        total += (p['amount'] as num?)?.toDouble() ?? 0;
+      }
+    }
+    return total;
+  }
+
+  double get _nextPayout {
+    double total = 0;
+    for (final p in _allPayments) {
+      final status = (p['status'] ?? '').toString().toUpperCase();
+      if (status == 'SUCCESSFUL') {
+        total += (p['amount'] as num?)?.toDouble() ?? 0;
+      }
+    }
+    // Use dashboard totalRevenue as fallback if no individual payments loaded
+    if (total == 0 && _stats != null) {
+      total = (_stats!['totalRevenue'] as num?)?.toDouble() ?? 0;
+    }
+    return total;
   }
 
   bool get _hasPayments => (_stats?['totalRevenue'] ?? 0) > 0 || _properties.isNotEmpty;
@@ -112,9 +148,9 @@ class _LandlordPaymentScreenState extends State<LandlordPaymentScreen> {
       ),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: _MiniStat('Outstanding', '\$0', AppColors.warning)),
+        Expanded(child: _MiniStat('Outstanding', '\$${_outstanding.toStringAsFixed(2)}', AppColors.warning)),
         const SizedBox(width: 12),
-        Expanded(child: _MiniStat('Next Payout', '\$0', AppColors.success)),
+        Expanded(child: _MiniStat('Next Payout', '\$${_nextPayout.toStringAsFixed(2)}', AppColors.success)),
       ]),
       const SizedBox(height: 16),
       // Filter tabs

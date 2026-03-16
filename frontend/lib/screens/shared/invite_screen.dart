@@ -56,7 +56,10 @@ class _InviteScreenState extends State<InviteScreen> {
                 ..._invitations.map((inv) => _InviteCard(invite: inv, onCancel: () async {
                   await ApiService.delete('/invitations/${inv['id']}');
                   _load();
-                }, onResend: () {})),
+                }, onResend: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Resend coming soon')));
+                })),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(14),
