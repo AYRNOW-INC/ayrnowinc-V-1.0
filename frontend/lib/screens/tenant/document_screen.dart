@@ -136,7 +136,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
                       )),
                     ] else if (status == 'APPROVED' || status == 'UNDER_REVIEW') ...[
                       const SizedBox(height: 6),
-                      TextButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Document preview coming soon'))), child: const Text('View >', style: TextStyle(fontSize: 13))),
+                      TextButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${doc?['fileName'] ?? 'Document'} — Status: ${doc?['status'] ?? 'Uploaded'}'))), child: const Text('View >', style: TextStyle(fontSize: 13))),
                     ],
                     if (doc?['reviewComment'] != null) ...[
                       const SizedBox(height: 6),

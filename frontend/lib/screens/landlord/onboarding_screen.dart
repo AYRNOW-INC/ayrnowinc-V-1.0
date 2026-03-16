@@ -175,7 +175,11 @@ class _LandlordOnboardingScreenState extends State<LandlordOnboardingScreen> {
                   style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                 const SizedBox(height: 12),
                 OutlinedButton(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Video guide coming soon"))),
+                  onPressed: () => showDialog(context: context, builder: (_) => AlertDialog(
+                    title: const Text('Setup Guide'),
+                    content: const Text('Follow the onboarding checklist above to get started:\n\n1. Add your first property\n2. Configure units and rent amounts\n3. Invite your tenants\n4. Create digital leases\n\nEach step guides you through the process.'),
+                    actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Got it'))],
+                  )),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.border),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

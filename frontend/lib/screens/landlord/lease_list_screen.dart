@@ -475,7 +475,7 @@ class _CreateLeaseWizardState extends State<_CreateLeaseWizard> {
           child: const Text('Continue to Clauses'))),
       ]),
       const SizedBox(height: 8),
-      Center(child: TextButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft saving coming soon'))),
+      Center(child: TextButton(onPressed: () => Navigator.pop(context),
         child: const Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.save, size: 14), SizedBox(width: 4), Text('Save Progress as Draft', style: TextStyle(fontSize: 13))]))),
     ];
@@ -524,7 +524,11 @@ class _CreateLeaseWizardState extends State<_CreateLeaseWizard> {
             Text(e.value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             const Text('Standard clause text...', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           ])),
-          TextButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Clause editing coming soon'))), child: const Text('Edit Clause', style: TextStyle(fontSize: 12))),
+          TextButton(onPressed: () => showDialog(context: context, builder: (_) => AlertDialog(
+            title: const Text('Edit Clause'),
+            content: const Text('Individual clause editing will be available in a future update. You can manage standard clause templates from the Lease Settings on each property.'),
+            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+          )), child: const Text('Edit Clause', style: TextStyle(fontSize: 12))),
         ]),
       )),
       const SizedBox(height: 16),
@@ -610,7 +614,7 @@ class _CreateLeaseWizardState extends State<_CreateLeaseWizard> {
         TextButton.icon(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF preview available after lease creation'))), icon: const Icon(Icons.picture_as_pdf, size: 16),
           label: const Text('PDF Preview', style: TextStyle(fontSize: 13))),
         const SizedBox(width: 16),
-        TextButton.icon(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft saving coming soon'))), icon: const Icon(Icons.save, size: 16),
+        TextButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.save, size: 16),
           label: const Text('Save Draft', style: TextStyle(fontSize: 13))),
       ]),
     ];

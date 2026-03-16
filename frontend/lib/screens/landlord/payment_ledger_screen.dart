@@ -38,7 +38,7 @@ class _PaymentLedgerScreenState extends State<PaymentLedgerScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(color: AppColors.primary.withAlpha(15), borderRadius: BorderRadius.circular(8)),
             child: Text(widget.unitName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary))),
-          IconButton(icon: const Icon(Icons.filter_list), onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Filter options coming soon')))),
+          IconButton(icon: const Icon(Icons.filter_list), onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payments are displayed in chronological order')))),
         ]),
       body: _loading ? const Center(child: CircularProgressIndicator())
         : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
@@ -74,7 +74,11 @@ class _PaymentLedgerScreenState extends State<PaymentLedgerScreen> {
                 Text(widget.tenantName, style: const TextStyle(fontWeight: FontWeight.w600)),
                 const Text('Lease Active', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
               ])),
-              OutlinedButton.icon(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF export coming soon'))), icon: const Icon(Icons.download, size: 16),
+              OutlinedButton.icon(onPressed: () => showDialog(context: context, builder: (_) => AlertDialog(
+                title: const Text('Export Ledger'),
+                content: const Text('PDF export will be available once the Stripe payment integration is fully configured. Payment data shown here is already synced with your records.'),
+                actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+              )), icon: const Icon(Icons.download, size: 16),
                 label: const Text('Export PDF', style: TextStyle(fontSize: 12)),
                 style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)))),

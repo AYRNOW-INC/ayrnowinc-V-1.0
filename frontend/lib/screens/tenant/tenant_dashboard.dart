@@ -75,7 +75,7 @@ class _TenantDashboardState extends State<TenantDashboard> {
                   return Text('$days Days to go', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.primary));
                 } catch (_) {}
               }
-              return const Text('Coming soon', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.primary));
+              return const Text('Pending', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.primary));
             }),
           ]),
           if (_stats?['propertyName'] != null) ...[
