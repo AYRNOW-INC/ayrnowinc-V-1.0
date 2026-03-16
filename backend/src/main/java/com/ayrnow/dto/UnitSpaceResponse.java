@@ -18,4 +18,11 @@ public class UnitSpaceResponse {
     private BigDecimal monthlyRent;
     private String status;
     private String description;
+
+    // Lifecycle enrichment fields
+    private String invitationStatus;  // null, PENDING, SENT, ACCEPTED, etc.
+    private String leaseStatus;       // null, DRAFT, SENT_FOR_SIGNING, FULLY_EXECUTED, etc.
+    private Long activeLeaseId;       // For deep-link to lease
+    private String tenantName;        // If tenant is assigned
+    private String workflowStep;      // Computed: SETUP, INVITE, LEASE, SIGN, ACTIVE
 }

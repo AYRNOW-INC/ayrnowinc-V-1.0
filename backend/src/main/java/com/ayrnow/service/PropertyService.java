@@ -18,6 +18,8 @@ public class PropertyService {
     private final UnitSpaceRepository unitSpaceRepository;
     private final UserRepository userRepository;
     private final LeaseSettingsRepository leaseSettingsRepository;
+    private final InvitationRepository invitationRepository;
+    private final LeaseRepository leaseRepository;
 
     @Transactional
     public PropertyResponse createProperty(Long landlordId, PropertyRequest request) {
@@ -145,6 +147,30 @@ public class PropertyService {
     }
 
     private UnitSpaceResponse toUnitResponse(UnitSpace u) {
+        // Determine invitation status for this unit
+        var invitations = invitationRepository.findByUnitSpaceId(u.getId());
+        String invStatus = invitations.stream()
+                .filter(i -> i.getStatus() != InvitationStatus.CANCELLED && i.getStatus() != InvitationStatus.EXPIRED)
+                .findFirst()
+                .map(i -> i.getStatus().name())
+                .orElse(null);
+
+        // Determine lease status for this unit
+        var leases = leaseRepository.findByUnitSpaceId(u.getId());
+        var activeLease = leases.stream()
+                .filter(l -> l.getStatus() != LeaseStatus.TERMINATED && l.getStatus() != LeaseStatus.EXPIRED)
+                .findFirst();
+        String leaseStatus = activeLease.map(l -> l.getStatus().name()).orElse(null);
+        Long leaseId = activeLease.map(Lease::getId).orElse(null);
+
+        // Determine tenant name if lease exists
+        String tenantName = activeLease
+                .map(l -> l.getTenant().getFirstName() + " " + l.getTenant().getLastName())
+                .orElse(null);
+
+        // Compute workflow step
+        String workflowStep = computeWorkflowStep(u.getStatus(), invStatus, leaseStatus);
+
         return UnitSpaceResponse.builder()
                 .id(u.getId())
                 .propertyId(u.getProperty().getId())
@@ -157,7 +183,26 @@ public class PropertyService {
                 .monthlyRent(u.getMonthlyRent())
                 .status(u.getStatus())
                 .description(u.getDescription())
+                .invitationStatus(invStatus)
+                .leaseStatus(leaseStatus)
+                .activeLeaseId(leaseId)
+                .tenantName(tenantName)
+                .workflowStep(workflowStep)
                 .build();
+    }
+
+    private String computeWorkflowStep(String unitStatus, String invStatus, String leaseStatus) {
+        if ("OCCUPIED".equals(unitStatus) && "FULLY_EXECUTED".equals(leaseStatus)) return "ACTIVE";
+        if (leaseStatus != null) {
+            if ("FULLY_EXECUTED".equals(leaseStatus)) return "ACTIVE";
+            if ("DRAFT".equals(leaseStatus) || "SENT_FOR_SIGNING".equals(leaseStatus)
+                || "LANDLORD_SIGNED".equals(leaseStatus) || "TENANT_SIGNED".equals(leaseStatus)) return "SIGN";
+        }
+        if (invStatus != null) {
+            if ("ACCEPTED".equals(invStatus) && leaseStatus == null) return "LEASE";
+            if ("PENDING".equals(invStatus) || "SENT".equals(invStatus) || "OPENED".equals(invStatus)) return "INVITE";
+        }
+        return "SETUP";
     }
 
     private UnitType getDefaultUnitType(PropertyType pt) {

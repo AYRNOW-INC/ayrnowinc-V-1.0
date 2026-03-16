@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import 'edit_unit_screen.dart';
+import 'lease_list_screen.dart';
+import '../shared/invite_screen.dart';
 
 /// Wireframe C3: Property Detail with hero, stats, tabs, unit list
 class PropertyDetailScreen extends StatefulWidget {
@@ -169,8 +171,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> with Single
           unit: u,
           onEdit: () => Navigator.push(context, MaterialPageRoute(
             builder: (_) => EditUnitScreen(propertyId: widget.propertyId, unit: u, onSaved: _load))),
-          onAction: () => Navigator.push(context, MaterialPageRoute(
-            builder: (_) => EditUnitScreen(propertyId: widget.propertyId, unit: u, onSaved: _load))),
+          onAction: () => _handleUnitAction(u),
         )),
       const SizedBox(height: 8),
       OutlinedButton.icon(
@@ -266,6 +267,30 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> with Single
     Navigator.push(context, MaterialPageRoute(
       builder: (_) => _LeaseSettingsScreen(propertyId: widget.propertyId)));
   }
+
+  /// Route to the correct next action based on unit workflow step
+  void _handleUnitAction(Map<String, dynamic> unit) {
+    final step = (unit['workflowStep'] ?? 'SETUP').toString();
+    switch (step) {
+      case 'SETUP':
+      case 'INVITE':
+        // Navigate to invite screen
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const InviteScreen()));
+        break;
+      case 'LEASE':
+        // Navigate to lease creation
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaseListScreen()));
+        break;
+      case 'SIGN':
+      case 'ACTIVE':
+        // Navigate to lease list for management
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaseListScreen()));
+        break;
+      default:
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => EditUnitScreen(propertyId: widget.propertyId, unit: unit, onSaved: _load)));
+    }
+  }
 }
 
 class _TabFilter extends StatelessWidget {
@@ -317,10 +342,19 @@ class _GuidedUnitCard extends StatelessWidget {
   const _GuidedUnitCard({required this.unit, required this.onEdit, required this.onAction});
 
   _UnitStep get _currentStep {
-    final status = (unit['status'] ?? '').toString().toUpperCase();
-    if (status == 'OCCUPIED') return _UnitStep.active;
-    // Vacant — determine sub-step from available data
-    return _UnitStep.setup; // Default for vacant units: ready for invite
+    // Use backend-computed workflowStep if available
+    final wfStep = (unit['workflowStep'] ?? '').toString().toUpperCase();
+    switch (wfStep) {
+      case 'ACTIVE': return _UnitStep.active;
+      case 'SIGN': return _UnitStep.sign;
+      case 'LEASE': return _UnitStep.lease;
+      case 'INVITE': return _UnitStep.invite;
+      case 'SETUP': return _UnitStep.setup;
+      default:
+        // Fallback: derive from status field
+        if ((unit['status'] ?? '').toString().toUpperCase() == 'OCCUPIED') return _UnitStep.active;
+        return _UnitStep.setup;
+    }
   }
 
   @override
@@ -363,6 +397,11 @@ class _GuidedUnitCard extends StatelessWidget {
                       const Text(' · ', style: TextStyle(color: AppColors.textSecondary)),
                       Text('\$$rent/mo', style: const TextStyle(
                         fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    ],
+                    if (unit['tenantName'] != null) ...[
+                      const Text(' · ', style: TextStyle(color: AppColors.textSecondary)),
+                      Flexible(child: Text(unit['tenantName'], style: const TextStyle(
+                        fontSize: 12, color: AppColors.teal), overflow: TextOverflow.ellipsis)),
                     ],
                   ]),
                 ],
