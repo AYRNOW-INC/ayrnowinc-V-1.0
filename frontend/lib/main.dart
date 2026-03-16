@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
+import 'services/backend_guard.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth/splash_welcome_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -43,11 +44,37 @@ class AyrnowApp extends StatelessWidget {
   }
 }
 
-class _AuthGate extends StatelessWidget {
+class _AuthGate extends StatefulWidget {
   const _AuthGate();
 
   @override
+  State<_AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<_AuthGate> {
+  bool _backendChecked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBackend();
+  }
+
+  Future<void> _checkBackend() async {
+    await BackendGuard.verify();
+    if (mounted) setState(() => _backendChecked = true);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Show mismatch warning if wrong backend detected
+    if (_backendChecked && BackendGuard.isMismatch) {
+      return _BackendMismatchScreen(onRetry: () {
+        setState(() => _backendChecked = false);
+        _checkBackend();
+      });
+    }
+
     return Consumer<AuthProvider>(
       builder: (_, auth, __) {
         if (auth.isLoading) return const _LoadingSplash();
@@ -55,6 +82,64 @@ class _AuthGate extends StatelessWidget {
         if (auth.isLandlord) return const LandlordShell();
         return const TenantShell();
       },
+    );
+  }
+}
+
+/// Blocking error screen shown when frontend detects the wrong backend
+class _BackendMismatchScreen extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _BackendMismatchScreen({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 72, height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.red.withAlpha(15),
+                  shape: BoxShape.circle),
+                child: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 40),
+              ),
+              const SizedBox(height: 20),
+              const Text('Wrong Backend', style: TextStyle(
+                fontSize: 22, fontWeight: FontWeight.w700, color: Colors.red)),
+              const SizedBox(height: 12),
+              Text(
+                'Expected: AyrnowPlanB\n'
+                'Detected: ${BackendGuard.detectedRepo ?? "AYRNOW (original)"}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 15, height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10)),
+                child: const Text(
+                  'cd AyrnowPlanB/backend\nmvn spring-boot:run',
+                  style: TextStyle(fontFamily: 'monospace', fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(200, 48)),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
