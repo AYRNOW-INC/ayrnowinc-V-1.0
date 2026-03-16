@@ -567,6 +567,13 @@ class _LeaseSettingsScreenState extends State<_LeaseSettingsScreen> {
   final _lateFeeC = TextEditingController();
 
   @override
+  void dispose() {
+    _termC.dispose(); _rentC.dispose(); _depositC.dispose();
+    _dueDayC.dispose(); _graceC.dispose(); _lateFeeC.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     _load();

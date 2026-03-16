@@ -267,7 +267,7 @@ class _GuidedPropertyCard extends StatelessWidget {
                         const Icon(Icons.location_on_outlined, size: 13, color: AppColors.textSecondary),
                         const SizedBox(width: 3),
                         Expanded(child: Text(
-                          '${property['address']}, ${property['city']}',
+                          '${property['address'] ?? ''}, ${property['city'] ?? ''}',
                           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                           overflow: TextOverflow.ellipsis)),
                       ]),
