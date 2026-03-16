@@ -56,9 +56,20 @@ class _InviteScreenState extends State<InviteScreen> {
                 ..._invitations.map((inv) => _InviteCard(invite: inv, onCancel: () async {
                   await ApiService.delete('/invitations/${inv['id']}');
                   _load();
-                }, onResend: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Resend coming soon')));
+                }, onResend: () async {
+                  try {
+                    await ApiService.post('/invitations/${inv['id']}/resend', body: {});
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Invitation resent successfully')));
+                    }
+                    _load();
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to resend: $e'), backgroundColor: Colors.red));
+                    }
+                  }
                 })),
                 const SizedBox(height: 16),
                 Container(

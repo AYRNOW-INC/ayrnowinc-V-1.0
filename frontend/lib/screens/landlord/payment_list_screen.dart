@@ -176,10 +176,19 @@ class _LandlordPaymentScreenState extends State<LandlordPaymentScreen> {
               builder: (_, snap) {
                 if (snap.connectionState != ConnectionState.done)
                   return const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator());
-                final payments = snap.data ?? [];
+                final allPayments = snap.data ?? [];
+                final payments = allPayments.where((p) {
+                  if (_filter == 'All') return true;
+                  final status = (p['status'] ?? '').toString().toUpperCase();
+                  if (_filter == 'Pending') return status == 'PENDING';
+                  if (_filter == 'Paid') return status == 'SUCCESSFUL';
+                  if (_filter == 'Overdue') return status == 'OVERDUE' || status == 'FAILED';
+                  return true;
+                }).toList();
                 if (payments.isEmpty)
-                  return const Padding(padding: EdgeInsets.all(16), child: Text('No payments yet',
-                    style: TextStyle(color: AppColors.textSecondary)));
+                  return Padding(padding: const EdgeInsets.all(16), child: Text(
+                    _filter == 'All' ? 'No payments yet' : 'No $_filter payments',
+                    style: const TextStyle(color: AppColors.textSecondary)));
                 return Column(children: [
                   ...payments.map((pay) => ListTile(
                     leading: CircleAvatar(radius: 16,

@@ -5,7 +5,8 @@ import '../../theme/app_theme.dart';
 /// Wireframes C4 (Step 1), C5 (Step 2), C6 (Step 3), C9 (Success)
 class AddPropertyScreen extends StatefulWidget {
   final VoidCallback onCreated;
-  const AddPropertyScreen({super.key, required this.onCreated});
+  final Map<String, dynamic>? property; // null = create, non-null = edit
+  const AddPropertyScreen({super.key, required this.onCreated, this.property});
 
   @override
   State<AddPropertyScreen> createState() => _AddPropertyScreenState();
@@ -14,6 +15,7 @@ class AddPropertyScreen extends StatefulWidget {
 class _AddPropertyScreenState extends State<AddPropertyScreen> {
   int _step = 1;
   bool _saving = false;
+  bool get _isEdit => widget.property != null;
 
   // Step 1 fields
   final _nameC = TextEditingController();
@@ -23,6 +25,21 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   final _zipC = TextEditingController();
   final _descC = TextEditingController();
   String _type = 'RESIDENTIAL';
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEdit) {
+      final p = widget.property!;
+      _nameC.text = p['name'] ?? '';
+      _addressC.text = p['address'] ?? '';
+      _cityC.text = p['city'] ?? '';
+      _stateC.text = p['state'] ?? '';
+      _zipC.text = p['postalCode'] ?? '';
+      _descC.text = p['description'] ?? '';
+      _type = p['propertyType'] ?? 'RESIDENTIAL';
+    }
+  }
 
   // Step 2 fields
   final _unitsC = TextEditingController(text: '1');
@@ -61,7 +78,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   Future<void> _create() async {
     setState(() => _saving = true);
     try {
-      final result = await ApiService.post('/properties', body: {
+      final body = {
         'name': _nameC.text.trim(),
         'propertyType': _type,
         'address': _addressC.text.trim(),
@@ -69,10 +86,17 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         'state': _stateC.text.trim(),
         'postalCode': _zipC.text.trim(),
         'description': _descC.text.trim(),
-        'initialUnitCount': int.tryParse(_unitsC.text) ?? 0,
-      });
+        if (!_isEdit) 'initialUnitCount': int.tryParse(_unitsC.text) ?? 0,
+      };
+      final result = _isEdit
+        ? await ApiService.put('/properties/${widget.property!['id']}', body: body)
+        : await ApiService.post('/properties', body: body);
       widget.onCreated();
-      if (mounted) setState(() { _created = result; _step = 4; });
+      if (_isEdit) {
+        if (mounted) Navigator.pop(context, true);
+      } else {
+        if (mounted) setState(() { _created = result; _step = 4; });
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error));

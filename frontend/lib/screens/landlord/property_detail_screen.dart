@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import 'add_property_screen.dart';
 import 'edit_unit_screen.dart';
 import 'lease_list_screen.dart';
 import '../shared/invite_screen.dart';
@@ -68,8 +69,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> with Single
           ], onSelected: (v) {
             if (v == 'settings') _showLeaseSettings();
             if (v == 'edit') {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit property coming soon')));
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => AddPropertyScreen(property: _property, onCreated: _load),
+              )).then((_) => _load());
             }
             if (v == 'delete') _confirmDelete();
           }),
